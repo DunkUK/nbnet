@@ -39,7 +39,9 @@ freely, subject to the following restrictions:
 #pragma region Platform detection
 
 #if defined(_WIN32) || defined(_WIN64)
-#define PLATFORM_WINDOWS
+	#ifndef PLATFORM_WINDOWS
+		#define PLATFORM_WINDOWS
+	#endif
 #elif (defined(__APPLE__) && defined(__MACH__))
 #define PLATFORM_MAC
 #else
@@ -311,7 +313,7 @@ static NBN_UDPConnection *GetUDPConnection(NBN_IPAddress address)
 
     if (udp_conn == NULL) /* this is a new connection */
     {
-        udp_conn = malloc(sizeof(NBN_UDPConnection));
+        udp_conn = (NBN_UDPConnection*)malloc(sizeof(NBN_UDPConnection));
         uint32_t conn_id = next_conn_id++;
 
         udp_conn->id = conn_id;
@@ -333,7 +335,7 @@ static NBN_UDPConnection *FindClientConnectionByAddress(NBN_IPAddress address)
 
     while (current_node)
     {
-        NBN_UDPConnection *connection = current_node->data;
+        NBN_UDPConnection *connection = (NBN_UDPConnection*)current_node->data;
 
         if (connection->address.host == address.host && connection->address.port == address.port)
             return connection;
@@ -350,7 +352,7 @@ static NBN_UDPConnection *FindClientConnectionById(uint32_t conn_id)
 
     while (current_node)
     {
-        NBN_UDPConnection *connection = current_node->data;
+        NBN_UDPConnection *connection = (NBN_UDPConnection*)current_node->data;
 
         if (connection->id == conn_id)
             return connection;

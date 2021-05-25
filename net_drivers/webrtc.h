@@ -32,18 +32,26 @@ freely, subject to the following restrictions:
 
 #ifdef NBNET_IMPL
 
+#if !defined(EXTERN_C)
+#if defined(__cplusplus)
+#define EXTERN_C extern "C"
+#else
+#define EXTERN_C extern
+#endif
+#endif
+
 #include <emscripten/emscripten.h>
 
 #pragma region Game server
 
 /* --- JS API --- */
 
-extern void __js_game_server_init(uint32_t);
-extern int __js_game_server_start(uint16_t);
-extern uint8_t *__js_game_server_dequeue_packet(uint32_t *, unsigned int *);
-extern int __js_game_server_send_packet_to(uint8_t *, unsigned int, uint32_t);
-extern void __js_game_server_close_client_peer(unsigned int);
-extern void __js_game_server_stop(void);
+EXTERN_C void __js_game_server_init(uint32_t);
+EXTERN_C int __js_game_server_start(uint16_t);
+EXTERN_C uint8_t *__js_game_server_dequeue_packet(uint32_t *, unsigned int *);
+EXTERN_C int __js_game_server_send_packet_to(uint8_t *, unsigned int, uint32_t);
+EXTERN_C void __js_game_server_close_client_peer(unsigned int);
+EXTERN_C void __js_game_server_stop(void);
 
 /* --- Driver implementation --- */
 
@@ -71,11 +79,10 @@ int NBN_Driver_GServ_RecvPackets(void)
     while ((data = __js_game_server_dequeue_packet(&peer_id, &len)) != NULL)
     {
         NBN_Packet packet;
+		NBN_Connection *cli = NBN_GameServer_FindClientById(peer_id);
 
-        if (NBN_Packet_InitRead(&packet, data, len) < 0)
+        if (NBN_Packet_InitRead(&packet, cli, data, len) < 0)
             continue;
-
-        NBN_Connection *cli = NBN_GameServer_FindClientById(peer_id);
 
         if (cli == NULL)
         {
@@ -110,11 +117,11 @@ int NBN_Driver_GServ_SendPacketTo(NBN_Packet *packet, uint32_t peer_id)
 
 /* --- JS API --- */
 
-extern void __js_game_client_init(uint32_t);
-extern int __js_game_client_start(const char *, uint16_t);
-extern uint8_t *__js_game_client_dequeue_packet(unsigned int *);
-extern int __js_game_client_send_packet(uint8_t *, unsigned int);
-extern void __js_game_client_close(void);
+EXTERN_C void __js_game_client_init(uint32_t);
+EXTERN_C int __js_game_client_start(const char *, uint16_t);
+EXTERN_C uint8_t *__js_game_client_dequeue_packet(unsigned int *);
+EXTERN_C int __js_game_client_send_packet(uint8_t *, unsigned int);
+EXTERN_C void __js_game_client_close(void);
 
 /* --- Driver implementation --- */
 
@@ -149,7 +156,7 @@ int NBN_Driver_GCli_RecvPackets(void)
     {
         NBN_Packet packet;
 
-        if (NBN_Packet_InitRead(&packet, data, len) < 0)
+        if (NBN_Packet_InitRead(&packet, server, data, len) < 0)
             continue;
 
         if (!is_connected_to_server)
