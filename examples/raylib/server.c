@@ -73,7 +73,6 @@ static int HandleNewConnection(void)
 
     // Otherwise...
 
-    // Retrieve the incoming client connection
     NBN_Connection *connection = NBN_GameServer_GetIncomingConnection(); 
 
     // Get a spawning position for the client
@@ -117,31 +116,6 @@ static int HandleNewConnection(void)
     return 0;
 }
 
-static void DestroyClient(uint32_t client_id)
-{
-    for (int i = 0; i < MAX_CLIENTS; i++)
-    {
-        if (clients[i] && clients[i]->state.client_id == client_id)
-        {
-            free(clients[i]);
-            clients[i] = NULL;
-
-            return;
-        }
-    }
-}
-
-static void HandleClientDisconnection()
-{
-    uint32_t client_id = NBN_GameServer_GetDisconnectedClientId(); // Get the id of the disconnected client
-
-    TraceLog(LOG_INFO, "Client has disconnected (id: %d)", client_id);
-
-    DestroyClient(client_id);
-
-    client_count--;
-}
-
 static Client *FindClientById(uint32_t client_id)
 {
     for (int i = 0; i < MAX_CLIENTS; i++)
@@ -153,6 +127,37 @@ static Client *FindClientById(uint32_t client_id)
     return NULL;
 }
 
+static void DestroyClient(Client *client)
+{
+    for (int i = 0; i < MAX_CLIENTS; i++)
+    {
+        if (clients[i] && clients[i]->state.client_id == client->state.client_id)
+        {
+            clients[i] = NULL;
+
+            return;
+        }
+    }
+
+    free(client);
+}
+
+static void HandleClientDisconnection()
+{
+    NBN_Connection *cli_conn = NBN_GameServer_GetDisconnectedClient(); // Get the disconnected client
+
+    TraceLog(LOG_INFO, "Client has disconnected (id: %d)", cli_conn->id);
+
+    Client *client = FindClientById(cli_conn->id);
+
+    assert(client);
+
+    DestroyClient(client);
+    NBN_Connection_Destroy(cli_conn);
+
+    client_count--;
+}
+
 static void HandleUpdateStateMessage(UpdateStateMessage *msg, Client *sender)
 {
     // Update the state of the client with the data from the received UpdateStateMessage message
@@ -160,7 +165,7 @@ static void HandleUpdateStateMessage(UpdateStateMessage *msg, Client *sender)
     sender->state.y = msg->y;
     sender->state.val = msg->val;
 
-    NBN_GameServer_DestroyMessage(UPDATE_STATE_MESSAGE, msg);
+    UpdateStateMessage_Destroy(msg);
 }
 
 static void HandleChangeColorMessage(ChangeColorMessage *msg, Client *sender)
@@ -168,13 +173,13 @@ static void HandleChangeColorMessage(ChangeColorMessage *msg, Client *sender)
     // Update the client color
     sender->state.color = msg->color;
 
-    NBN_GameServer_DestroyMessage(CHANGE_COLOR_MESSAGE, msg);
+    ChangeColorMessage_Destroy(msg);
 }
 
 static void HandleReceivedMessage(void)
 {
     // Fetch info about the last received message
-    NBN_MessageInfo msg_info = NBN_GameServer_GetReceivedMessageInfo();
+    NBN_MessageInfo msg_info = NBN_GameServer_GetMessageInfo();
 
     // Find the client that sent the message
     Client *sender = FindClientById(msg_info.sender->id);
@@ -245,18 +250,19 @@ static int BroadcastGameState(void)
 
     assert(client_index == client_count);
 
-    // Create a GameStateMessage unreliable message
-    GameStateMessage *msg = NBN_GameServer_CreateUnreliableMessage(GAME_STATE_MESSAGE);
-
-    if (msg == NULL)
-        return -1;
+    GameStateMessage *msg = GameStateMessage_Create();
 
     // Fill message data
     msg->client_count = client_index;
     memcpy(msg->client_states, client_states, sizeof(ClientState) * MAX_CLIENTS);
 
-    // Broadcast the message
-    NBN_GameServer_BroadcastMessage();
+    // Create a nbnet outgoing message
+    NBN_OutgoingMessage *outgoing_msg = NBN_GameServer_CreateMessage(GAME_STATE_MESSAGE, msg);
+
+    assert(outgoing_msg);
+
+    // Unreliably broadcast the message to all connected clients
+    NBN_GameServer_BroadcastUnreliableMessage(outgoing_msg);
 
     return 0;
 }
@@ -283,9 +289,21 @@ int main(int argc, char *argv[])
 #endif
 
     // Register messages, have to be done after NBN_GameServer_Init and before NBN_GameServer_Start
-    NBN_GameServer_RegisterMessage(CHANGE_COLOR_MESSAGE, ChangeColorMessage);
-    NBN_GameServer_RegisterMessage(UPDATE_STATE_MESSAGE, UpdateStateMessage);
-    NBN_GameServer_RegisterMessage(GAME_STATE_MESSAGE, GameStateMessage);
+    NBN_GameServer_RegisterMessage(
+            CHANGE_COLOR_MESSAGE,
+            (NBN_MessageBuilder)ChangeColorMessage_Create,
+            (NBN_MessageDestructor)ChangeColorMessage_Destroy,
+            (NBN_MessageSerializer)ChangeColorMessage_Serialize);
+    NBN_GameServer_RegisterMessage(
+            UPDATE_STATE_MESSAGE,
+            (NBN_MessageBuilder)UpdateStateMessage_Create,
+            (NBN_MessageDestructor)UpdateStateMessage_Destroy,
+            (NBN_MessageSerializer)UpdateStateMessage_Serialize);
+    NBN_GameServer_RegisterMessage(
+            GAME_STATE_MESSAGE,
+            (NBN_MessageBuilder)GameStateMessage_Create,
+            (NBN_MessageDestructor)GameStateMessage_Destroy,
+            (NBN_MessageSerializer)GameStateMessage_Serialize);
 
     // Network conditions simulated variables (read from the command line, default is always 0)
     NBN_GameServer_SetPing(GetOptions().ping);

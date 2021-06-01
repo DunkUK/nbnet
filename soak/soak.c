@@ -45,6 +45,10 @@ enum
 
 static bool running = true;
 static SoakOptions soak_options = {0};
+static unsigned int created_outgoing_soak_message_count = 0;
+static unsigned int created_incoming_soak_message_count = 0;
+static unsigned int destroyed_outgoing_soak_message_count = 0;
+static unsigned int destroyed_incoming_soak_message_count = 0;
 
 int Soak_Init(int argc, char *argv[])
 {
@@ -59,7 +63,10 @@ int Soak_Init(int argc, char *argv[])
     NBN_GameClient_EnableEncryption();
 #endif
 
-    NBN_GameClient_RegisterMessageWithDestructor(SOAK_MESSAGE, SoakMessage);
+    NBN_GameClient_RegisterMessage(SOAK_MESSAGE,
+            (NBN_MessageBuilder)SoakMessage_CreateIncoming,
+            (NBN_MessageDestructor)SoakMessage_Destroy,
+            (NBN_MessageSerializer)SoakMessage_Serialize);
 
 #endif
 
@@ -69,7 +76,10 @@ int Soak_Init(int argc, char *argv[])
     NBN_GameServer_EnableEncryption();
 #endif
 
-    NBN_GameServer_RegisterMessageWithDestructor(SOAK_MESSAGE, SoakMessage);
+    NBN_GameServer_RegisterMessage(SOAK_MESSAGE,
+            (NBN_MessageBuilder)SoakMessage_CreateIncoming,
+            (NBN_MessageDestructor)SoakMessage_Destroy,
+            (NBN_MessageSerializer)SoakMessage_Serialize);
 
 #endif
 
@@ -95,18 +105,7 @@ void Soak_Deinit(void)
 {
     Soak_LogInfo("Done.");
     Soak_LogInfo("Memory report:\n");
-
-    NBN_MemoryReport mem_report = NBN_MemoryManager_GetReport();
-
-    Soak_LogInfo("Total alloc count: %d", mem_report.alloc_count);
-    Soak_LogInfo("Total dealloc count: %d", mem_report.dealloc_count);
-    Soak_LogInfo("Total created message count: %d", mem_report.created_message_count);
-    Soak_LogInfo("Total destroyed message count: %d", mem_report.destroyed_message_count);
-
-    for (int i = 0; i < 5; i++)
-    {
-        Soak_LogInfo("Object %d | Allocs: %d, Deallocs: %d", i, mem_report.object_allocs[i], mem_report.object_deallocs[i]);
-    }
+    // TODO
 }
 
 int Soak_ReadCommandLine(int argc, char *argv[])
@@ -209,7 +208,10 @@ void Soak_Debug_PrintAddedToRecvQueue(NBN_Connection *conn, NBN_Message *msg)
 {
     if (msg->header.type == NBN_MESSAGE_CHUNK_TYPE)
     {
-        Soak_LogDebug("Soak message chunk added to recv queue");
+        NBN_MessageChunk *chunk = msg->data;
+
+        Soak_LogDebug("Soak message chunk added to recv queue (chunk id: %d, chunk total: %d)",
+                chunk->id, chunk->total);
     }
     else
     {
@@ -220,7 +222,54 @@ void Soak_Debug_PrintAddedToRecvQueue(NBN_Connection *conn, NBN_Message *msg)
     }
 }
 
-void SoakMessage_Destroy(void *msg)
+unsigned int Soak_GetCreatedOutgoingSoakMessageCount(void)
 {
-    NBN_Deallocator(msg);
+    return created_outgoing_soak_message_count;
+}
+
+unsigned int Soak_GetDestroyedOutgoingSoakMessageCount(void)
+{
+    return destroyed_outgoing_soak_message_count;
+}
+
+unsigned int Soak_GetCreatedIncomingSoakMessageCount(void)
+{
+    return created_incoming_soak_message_count;
+}
+
+unsigned int Soak_GetDestroyedIncomingSoakMessageCount(void)
+{
+    return destroyed_incoming_soak_message_count;
+}
+
+SoakMessage *SoakMessage_CreateIncoming(void)
+{
+    SoakMessage *msg = malloc(sizeof(SoakMessage));
+
+    msg->outgoing = false;
+
+    created_incoming_soak_message_count++;
+
+    return msg;
+}
+
+SoakMessage *SoakMessage_CreateOutgoing(void)
+{
+    SoakMessage *msg = malloc(sizeof(SoakMessage));
+
+    msg->outgoing = true;
+
+    created_outgoing_soak_message_count++;
+
+    return msg;
+}
+
+void SoakMessage_Destroy(SoakMessage *msg)
+{
+    if (msg->outgoing)
+        destroyed_outgoing_soak_message_count++;
+    else
+        destroyed_incoming_soak_message_count++;
+
+    free(msg);
 }

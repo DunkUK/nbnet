@@ -38,6 +38,7 @@
 #include "logging.h"
 
 #define NBN_Allocator malloc
+#define NBN_Reallocator realloc
 #define NBN_Deallocator free
 
 /* nbnet logging */
@@ -54,11 +55,12 @@
 #define SOAK_TICK_DT (1.0 / SOAK_TICK_RATE)
 #define SOAK_MESSAGE_MIN_DATA_LENGTH 50
 #define SOAK_MESSAGE_MAX_DATA_LENGTH 4096
+#define SOAK_BIG_MESSAGE_PERCENTAGE 33
 #define SOAK_MESSAGE 0
 #define SOAK_SEED time(NULL)
 #define SOAK_DONE 1
 #define SOAK_MAX_CLIENTS 32
-#define SOAK_CLIENT_MAX_PENDING_MESSAGES 32 // max number of unacked messages at a time
+#define SOAK_CLIENT_MAX_PENDING_MESSAGES 50 // max number of unacked messages at a time
 #define SOAK_SERVER_FULL_CODE 42
 
 typedef struct
@@ -74,6 +76,7 @@ typedef struct
 {
     uint32_t id;
     unsigned int data_length;
+    bool outgoing;
     uint8_t data[SOAK_MESSAGE_MAX_DATA_LENGTH];
 } SoakMessage;
 
@@ -90,6 +93,12 @@ int Soak_MainLoop(int (*)(void));
 void Soak_Stop(void);
 SoakOptions Soak_GetOptions(void);
 void Soak_Debug_PrintAddedToRecvQueue(NBN_Connection *, NBN_Message *);
-void SoakMessage_Destroy(void *);
+unsigned int Soak_GetCreatedOutgoingSoakMessageCount(void);
+unsigned int Soak_GetDestroyedOutgoingSoakMessageCount(void);
+unsigned int Soak_GetCreatedIncomingSoakMessageCount(void);
+unsigned int Soak_GetDestroyedIncomingSoakMessageCount(void);
+SoakMessage *SoakMessage_CreateOutgoing(void);
+SoakMessage *SoakMessage_CreateIncoming(void);
+void SoakMessage_Destroy(SoakMessage *);
 
 #endif // SOAK_H_INCLUDED

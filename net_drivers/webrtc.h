@@ -32,26 +32,18 @@ freely, subject to the following restrictions:
 
 #ifdef NBNET_IMPL
 
-#if !defined(EXTERN_C)
-#if defined(__cplusplus)
-#define EXTERN_C extern "C"
-#else
-#define EXTERN_C extern
-#endif
-#endif
-
 #include <emscripten/emscripten.h>
 
 #pragma region Game server
 
 /* --- JS API --- */
 
-EXTERN_C void __js_game_server_init(uint32_t);
-EXTERN_C int __js_game_server_start(uint16_t);
-EXTERN_C uint8_t *__js_game_server_dequeue_packet(uint32_t *, unsigned int *);
-EXTERN_C int __js_game_server_send_packet_to(uint8_t *, unsigned int, uint32_t);
-EXTERN_C void __js_game_server_close_client_peer(unsigned int);
-EXTERN_C void __js_game_server_stop(void);
+extern void __js_game_server_init(uint32_t);
+extern int __js_game_server_start(uint16_t);
+extern uint8_t *__js_game_server_dequeue_packet(uint32_t *, unsigned int *);
+extern int __js_game_server_send_packet_to(uint8_t *, unsigned int, uint32_t);
+extern void __js_game_server_close_client_peer(unsigned int);
+extern void __js_game_server_stop(void);
 
 /* --- Driver implementation --- */
 
@@ -79,19 +71,20 @@ int NBN_Driver_GServ_RecvPackets(void)
     while ((data = __js_game_server_dequeue_packet(&peer_id, &len)) != NULL)
     {
         NBN_Packet packet;
-		NBN_Connection *cli = NBN_GameServer_FindClientById(peer_id);
 
-        if (NBN_Packet_InitRead(&packet, cli, data, len) < 0)
-            continue;
+        NBN_Connection *cli = NBN_GameServer_FindClientById(peer_id);
 
         if (cli == NULL)
         {
             NBN_LogTrace("Peer %d has connected", peer_id);
 
-            cli = NBN_GameServer_CreateClientConnection(peer_id);
+            cli = NBN_GameServer_CreateClientConnection(peer_id, NULL);
 
             NBN_Driver_GServ_RaiseEvent(NBN_DRIVER_GSERV_CLIENT_CONNECTED, cli);
         }
+
+        if (NBN_Packet_InitRead(&packet, cli, data, len) < 0)
+            continue;
 
         packet.sender = cli;
 
@@ -101,14 +94,14 @@ int NBN_Driver_GServ_RecvPackets(void)
     return 0;
 }
 
-void NBN_Driver_GServ_DestroyClientConnection(uint32_t peer_id)
+void NBN_Driver_GServ_DestroyClientConnection(NBN_Connection *conn)
 {
-    __js_game_server_close_client_peer(peer_id);
+    __js_game_server_close_client_peer(conn->id);
 }
 
-int NBN_Driver_GServ_SendPacketTo(NBN_Packet *packet, uint32_t peer_id)
+int NBN_Driver_GServ_SendPacketTo(NBN_Packet *packet, NBN_Connection *conn)
 {
-    return __js_game_server_send_packet_to(packet->buffer, packet->size, peer_id);
+    return __js_game_server_send_packet_to(packet->buffer, packet->size, conn->id);
 }
 
 #pragma endregion /* Game server */
@@ -117,11 +110,11 @@ int NBN_Driver_GServ_SendPacketTo(NBN_Packet *packet, uint32_t peer_id)
 
 /* --- JS API --- */
 
-EXTERN_C void __js_game_client_init(uint32_t);
-EXTERN_C int __js_game_client_start(const char *, uint16_t);
-EXTERN_C uint8_t *__js_game_client_dequeue_packet(unsigned int *);
-EXTERN_C int __js_game_client_send_packet(uint8_t *, unsigned int);
-EXTERN_C void __js_game_client_close(void);
+extern void __js_game_client_init(uint32_t);
+extern int __js_game_client_start(const char *, uint16_t);
+extern uint8_t *__js_game_client_dequeue_packet(unsigned int *);
+extern int __js_game_client_send_packet(uint8_t *, unsigned int);
+extern void __js_game_client_close(void);
 
 /* --- Driver implementation --- */
 
@@ -132,7 +125,7 @@ int NBN_Driver_GCli_Start(uint32_t protocol_id, const char *host, uint16_t port)
 {
     __js_game_client_init(protocol_id);
 
-    server = NBN_GameClient_CreateServerConnection();
+    server = NBN_GameClient_CreateServerConnection(NULL);
 
     int res;
 
