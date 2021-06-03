@@ -23,13 +23,15 @@ If you want to discuss the library, you can join the [nbnet's discord server](ht
 - Web (WebRTC) support (powered by [emscripten](https://emscripten.org/docs/introducing_emscripten/about_emscripten.html))
 - Encrypted and authenticated packets
 
+## Thanks
+
+nbnet encryption and packet authentication would not have been possible without those three open-source libraries:
+
+- [tiny-ECDH](https://github.com/kokke/tiny-ECDH-c)
+- [tiny-AES](https://github.com/kokke/tiny-AES-c)
+- [poly1305-donna](https://github.com/floodyberry/poly1305-donna)
+
 ## Projects using nbnet
-
-### Vinox
-
-An open-source voxel sandbox rpg game.
-
-https://github.com/muevoid/Vinox
 
 ### nb_tanks
 
