@@ -2278,7 +2278,7 @@ NBN_Connection *NBN_Connection_Create(uint32_t id, uint32_t protocol_id, void *d
         connection->packet_recv_seq_buffer[i] = 0xFFFFFFFF;
     }
 
-	connection->stats = NBN_ConnectionStats {};
+	connection->stats = (NBN_ConnectionStats) {};
     connection->can_decrypt = false;
     connection->can_encrypt = false;
 
@@ -2455,7 +2455,7 @@ int NBN_Connection_FlushSendQueue(NBN_Connection *connection)
 
                 NBN_Channel_UpdateMessageLastSendTime(channel, message, connection->time);
 
-                packet_entry->messages[packet_entry->messages_count++] = NBN_MessageEntry{
+                packet_entry->messages[packet_entry->messages_count++] = (NBN_MessageEntry){
                     message->header.id, channel->id
                 };
 
@@ -2655,7 +2655,7 @@ static NBN_PacketEntry *NBN_Connection_InsertOutgoingPacketEntry(NBN_Connection 
     uint16_t index = seq_number % NBN_MAX_PACKET_ENTRIES;
 
     connection->packet_send_seq_buffer[index] = seq_number;
-    connection->packet_send_buffer[index] = {};
+    connection->packet_send_buffer[index] = (NBN_PacketEntry){0};
 
     return &connection->packet_send_buffer[index];
 }
@@ -3701,7 +3701,7 @@ static int NBN_Endpoint_EnqueueOutgoingMessage(
 
     NBN_Message message = {
         { 0, outgoing_msg->type, channel_id },
-		nullptr,
+		NULL,
         outgoing_msg,
         outgoing_msg->data
     };
@@ -3923,7 +3923,10 @@ int NBN_GameClient_Poll(void)
 
             NBN_LogInfo("Server connection is stale. Disconnected.");
 
-            if (!NBN_EventQueue_Enqueue(&__game_client.endpoint.event_queue, NBN_Event{ NBN_DISCONNECTED }))
+			NBN_Event e;
+			e.type = NBN_DISCONNECTED;
+			e.data.connection = (NBN_Connection*)NULL;
+            if (!NBN_EventQueue_Enqueue(&__game_client.endpoint.event_queue, e))
                 return NBN_ERROR;
         }
         else
@@ -4078,7 +4081,8 @@ static int NBN_GameClient_ProcessReceivedMessage(NBN_Message *message, NBN_Conne
 {
     assert(__game_client.server_connection == server_connection);
 
-    NBN_Event ev = { NBN_MESSAGE_RECEIVED };
+    NBN_Event ev;
+	ev.type = NBN_MESSAGE_RECEIVED;
 
     if (message->header.type == NBN_MESSAGE_CHUNK_TYPE)
     {
@@ -4096,11 +4100,11 @@ static int NBN_GameClient_ProcessReceivedMessage(NBN_Message *message, NBN_Conne
             return -1;
         }
 
-        ev.data.message_info = NBN_MessageInfo{ complete_message.header.type, complete_message.data, NULL };
+        ev.data.message_info = (NBN_MessageInfo){ complete_message.header.type, complete_message.data, NULL };
     }
     else
     {
-        ev.data.message_info = NBN_MessageInfo{ message->header.type, message->data, NULL };
+        ev.data.message_info = (NBN_MessageInfo){ message->header.type, message->data, NULL };
     }
 
     if (!NBN_EventQueue_Enqueue(&__game_client.endpoint.event_queue, ev))
@@ -4274,7 +4278,7 @@ static int NBN_GameServer_StartEncryption(NBN_Connection *);
 
 void NBN_GameServer_Init(const char *protocol_name, uint16_t port)
 {
-    NBN_Config config = { protocol_name, nullptr, port, false };
+    NBN_Config config = { protocol_name, NULL, port, false };
 
     NBN_Endpoint_Init(&__game_server.endpoint, config, true);
 
@@ -4738,7 +4742,8 @@ static unsigned int NBN_GameServer_GetClientCount(void)
 
 static int NBN_GameServer_ProcessReceivedMessage(NBN_Message *message, NBN_Connection *client)
 {
-    NBN_Event ev = { NBN_CLIENT_MESSAGE_RECEIVED };
+    NBN_Event ev;
+    ev.type = NBN_CLIENT_MESSAGE_RECEIVED;
 
     if (message->header.type == NBN_MESSAGE_CHUNK_TYPE)
     {
@@ -4756,13 +4761,13 @@ static int NBN_GameServer_ProcessReceivedMessage(NBN_Message *message, NBN_Conne
             return -1;
         }
 
-        ev.data.message_info = NBN_MessageInfo{
+        ev.data.message_info = (NBN_MessageInfo){
             complete_message.header.type, complete_message.data, client
         };
     }
     else
     {
-        ev.data.message_info = NBN_MessageInfo{ message->header.type, message->data, client };
+        ev.data.message_info = (NBN_MessageInfo){ message->header.type, message->data, client };
     }
 
     if (!NBN_EventQueue_Enqueue(&__game_server.endpoint.event_queue, ev))
