@@ -23,6 +23,7 @@ SignalingServer.prototype.start = function(port) {
             httpServer: server,
             autoAcceptConnections: false
         })
+		this.logger.info('WebSocketServer = ' + JSON.stringify(this.wsServer, undefined, 2))
 
         this.wsServer.on('request', (request) => {
             this.logger.info('New connection')
@@ -40,6 +41,7 @@ SignalingServer.prototype.start = function(port) {
 
             resolve()
         })
+		this.logger.info('Server = ' + JSON.stringify(server, undefined, 2))
     })
 }
 

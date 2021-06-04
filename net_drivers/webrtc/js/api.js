@@ -27,6 +27,7 @@ mergeInto(LibraryManager.library, {
     __js_game_server_dequeue_packet__proxy: 'sync', 
 
     __js_game_server_init: function (protocol_id) {
+		console.log("__js_game_server_init");
         const nbnet = require('nbnet')
         const signalingServer = new nbnet.Standalone.SignalingServer(protocol_id)
 
@@ -34,7 +35,9 @@ mergeInto(LibraryManager.library, {
     },
 
     __js_game_server_start: function (port) {
+		console.log("__js_game_server_start - OK???");
         return Asyncify.handleSleep(function (wakeUp) {
+			console.log("Running gameServer.start with port " + port)
             this.gameServer.start(port).then(() => {
                 wakeUp(0)
             }).catch(_ => {
@@ -44,9 +47,11 @@ mergeInto(LibraryManager.library, {
     },
 
     __js_game_server_dequeue_packet: function(peerIdPtr, lenPtr) {
+		//console.log("__js_game_server_dequeue_packet");
         const packet = this.gameServer.packets.shift()
 
         if (packet) {
+			console.log("__js_game_server_dequeue_packet has packet!");
 			const packetData = packet[0]
 			const packetSenderId = packet[1]
             const ptr = stackAlloc(packetData.byteLength)
@@ -63,16 +68,19 @@ mergeInto(LibraryManager.library, {
     },
 
     __js_game_server_send_packet_to: function (packetPtr, packetSize, peerId) {
+		console.log("__js_game_server_send_packet_to");
         const data = new Uint8Array(Module.HEAPU8.subarray(packetPtr, packetPtr + packetSize))
 
         this.gameServer.send(data, peerId)
     },
 
     __js_game_server_close_client_peer: function(peerId) {
+		console.log("__js_game_server_close_client_peer");
         this.gameServer.closePeer(peerId)
     },
 
     __js_game_server_stop: function() {
+		console.log("__js_game_server_stop");
         this.gameServer.stop()
     }
 })
