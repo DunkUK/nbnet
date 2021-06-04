@@ -29,6 +29,10 @@ SignalingClient.prototype.connect = function(host, port) {
                 reject()
             }
         }
+		
+		this.ws.onerror = (ev) => {
+            this.logger.error('Error: %s', ev)
+        }
 
         this.ws.onopen = () => {
             this.logger.info('Connected')

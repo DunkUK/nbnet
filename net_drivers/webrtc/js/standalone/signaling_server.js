@@ -35,6 +35,18 @@ SignalingServer.prototype.start = function(port) {
             }
 
         })
+		
+		this.wsServer.on('upgradeError', (error) => {
+			this.logger.error('Error: ' + error)
+		})
+		
+		this.wsServer.on('connect', (connection) => {
+			this.logger.info('Websocket connection accepted')
+		})
+		
+		this.wsServer.on('close', (connection, closeReason, description) => {
+			this.logger.info('Websocket closed ' + closeReason + ', ' + description)
+		})
 
         server.listen(port, () => {
             this.logger.info('Started, listening on port %d...', port);
