@@ -53,7 +53,7 @@ mergeInto(LibraryManager.library, {
         const packet = this.gameServer.packets.shift()
 
         if (packet) {
-			console.log("__js_game_server_dequeue_packet has packet!");
+			//console.log("__js_game_server_dequeue_packet has packet!");
 			const packetData = packet[0]
 			const packetSenderId = packet[1]
             const ptr = stackAlloc(packetData.byteLength)
@@ -70,7 +70,7 @@ mergeInto(LibraryManager.library, {
     },
 
     __js_game_server_send_packet_to: function (packetPtr, packetSize, peerId) {
-		console.log("__js_game_server_send_packet_to");
+		//console.log("__js_game_server_send_packet_to");
         const data = new Uint8Array(Module.HEAPU8.subarray(packetPtr, packetPtr + packetSize))
 
         this.gameServer.send(data, peerId)
