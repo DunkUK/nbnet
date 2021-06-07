@@ -39,8 +39,10 @@ mergeInto(LibraryManager.library, {
         return Asyncify.handleSleep(function (wakeUp) {
 			console.log("Running gameServer.start with port " + port)
             this.gameServer.start(port).then(() => {
+				console.log("Gameserver waking up")
                 wakeUp(0)
             }).catch(_ => {
+				console.log("Gameserver exception")
                 wakeUp(-1)
             })
         })
