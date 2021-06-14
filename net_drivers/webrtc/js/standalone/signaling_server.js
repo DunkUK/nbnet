@@ -7,14 +7,43 @@ function SignalingServer(protocol_id) {
 }
 
 SignalingServer.prototype.start = function(port) {
+	var fs = require('fs');
+	var url = require('url');
+	var path = require('path');
+	port = process.env.PORT || port; // Some hosts (like Heroku) will need to override the port, and they do this with an environment variable
+	
     return new Promise((resolve, reject) => {
         this.logger.info('Starting (protocol: %s)...', this.protocol)
 
         const server = require('http').createServer((request, response) => {
             this.logger.info('Received request for ' + request.url)
-
-            response.writeHead(404)
-            response.end()
+			
+			var uri = url.parse(request.url).pathname;
+			var filename = path.join(process.cwd(), uri);
+			fs.exists(filename, function(exists)
+			{
+				if (!exists)
+				{
+					response.writeHead(404)
+					response.end()
+					return;
+				}
+				if (fs.statSync(filename).isDirectory()) filename += '/client.html';
+				
+				fs.readFile(filename, "binary", function(err, file)
+				{
+					if (err)
+					{
+						response.writeHead(500, {"Content-Type": "text/plain"});
+						response.write(err + "\n");
+						response.end();
+						return;
+					}
+					response.writeHead(200);
+					response.write(file, "binary");
+					response.end();
+				});
+			});
         })
 
         const WebSocketServer = require('websocket').server

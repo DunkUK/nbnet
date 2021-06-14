@@ -8,13 +8,14 @@ function SignalingClient(protocol_id) {
 
 SignalingClient.prototype.connect = function(host, port) {
     return new Promise((resolve, reject) => {
-        const uri = `ws://${host}:${port}`
+		var HOST = location.origin.replace(/^http/, 'ws')
+        const uri = HOST;
 
         this.logger.info(`Connecting to ${uri} (protocol: %s)...`, this.protocol)
 
         const WebSocket = require('websocket').w3cwebsocket
 
-        this.ws = new WebSocket(uri, this.protocol, `http://${host}:${port}`)
+        this.ws = new WebSocket(uri, this.protocol)
 
         this.ws.onclose = (ev) => {
             if (this.connected) {
