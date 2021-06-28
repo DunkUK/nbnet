@@ -20,6 +20,21 @@ SignalingServer.prototype.start = function(port) {
 			
 			var uri = url.parse(request.url).pathname;
 			var filename = path.join(process.cwd(), uri);
+			var zippedVersion = filename + ".gz";
+			var useZipped = false;
+			try
+			{
+				if(fs.statSync(zippedVersion).isFile())
+				{
+					useZipped = true;
+					filename = zippedVersion;
+				}
+			}
+			catch(e)
+			{
+				
+			}
+			this.logger.info('Zipped file ' + zippedVersion + ' found = ' + useZipped);
 			fs.exists(filename, function(exists)
 			{
 				if (!exists)
@@ -39,7 +54,14 @@ SignalingServer.prototype.start = function(port) {
 						response.end();
 						return;
 					}
-					response.writeHead(200);
+					if (useZipped)
+					{
+						response.writeHead(200, {"Content-Encoding": "gzip"});
+					}
+					else
+					{
+						response.writeHead(200);
+					}
 					response.write(file, "binary");
 					response.end();
 				});
