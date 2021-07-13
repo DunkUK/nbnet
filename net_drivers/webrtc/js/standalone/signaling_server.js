@@ -7,14 +7,65 @@ function SignalingServer(protocol_id) {
 }
 
 SignalingServer.prototype.start = function(port) {
+	var fs = require('fs');
+	var url = require('url');
+	var path = require('path');
+	port = process.env.PORT || port; // Some hosts (like Heroku) will need to override the port, and they do this with an environment variable
+	
     return new Promise((resolve, reject) => {
         this.logger.info('Starting (protocol: %s)...', this.protocol)
 
         const server = require('http').createServer((request, response) => {
             this.logger.info('Received request for ' + request.url)
-
-            response.writeHead(404)
-            response.end()
+			
+			var uri = url.parse(request.url).pathname;
+			var filename = path.join(process.cwd(), uri);
+			var zippedVersion = filename + ".gz";
+			var useZipped = false;
+			try
+			{
+				if(fs.statSync(zippedVersion).isFile())
+				{
+					useZipped = true;
+					filename = zippedVersion;
+				}
+			}
+			catch(e)
+			{
+				
+			}
+			this.logger.info('Zipped file ' + zippedVersion + ' found = ' + useZipped);
+			fs.exists(filename, function(exists)
+			{
+				if (!exists)
+				{
+					response.writeHead(404)
+					response.end()
+					return;
+				}
+				if (fs.statSync(filename).isDirectory()) filename += '/client.html';
+				
+				fs.readFile(filename, "binary", function(err, file)
+				{
+					if (err)
+					{
+						response.writeHead(500, {"Content-Type": "text/plain"});
+						response.write(err + "\n");
+						response.end();
+						return;
+					}
+					if (useZipped)
+					{
+						response.writeHead(200, {"Content-Encoding": "gzip"});
+					}
+					else
+					{
+						response.writeHead(200);
+					}
+					response.write(file, "binary");
+					response.end();
+				});
+			});
         })
 
         const WebSocketServer = require('websocket').server
@@ -23,6 +74,7 @@ SignalingServer.prototype.start = function(port) {
             httpServer: server,
             autoAcceptConnections: false
         })
+		this.logger.info('WebSocketServer = ' + JSON.stringify(this.wsServer, undefined, 2))
 
         this.wsServer.on('request', (request) => {
             this.logger.info('New connection')
@@ -34,12 +86,25 @@ SignalingServer.prototype.start = function(port) {
             }
 
         })
+		
+		this.wsServer.on('upgradeError', (error) => {
+			this.logger.error('Error: ' + error)
+		})
+		
+		this.wsServer.on('connect', (connection) => {
+			this.logger.info('Websocket connection accepted')
+		})
+		
+		this.wsServer.on('close', (connection, closeReason, description) => {
+			this.logger.info('Websocket closed ' + closeReason + ', ' + description)
+		})
 
         server.listen(port, () => {
             this.logger.info('Started, listening on port %d...', port);
 
             resolve()
         })
+		this.logger.info('Server = ' + JSON.stringify(server, undefined, 2))
     })
 }
 

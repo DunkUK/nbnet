@@ -27,6 +27,7 @@ mergeInto(LibraryManager.library, {
     __js_game_server_dequeue_packet__proxy: 'sync', 
 
     __js_game_server_init: function (protocol_id) {
+		console.log("__js_game_server_init");
         const nbnet = require('nbnet')
         const signalingServer = new nbnet.Standalone.SignalingServer(protocol_id)
 
@@ -34,20 +35,25 @@ mergeInto(LibraryManager.library, {
     },
 
     __js_game_server_start: function (port) {
+		console.log("__js_game_server_start - OK???");
         return Asyncify.handleSleep(function (wakeUp) {
+			console.log("Running gameServer.start with port " + port)
             this.gameServer.start(port).then(() => {
+				console.log("Gameserver waking up")
                 wakeUp(0)
             }).catch(_ => {
+				console.log("Gameserver exception")
                 wakeUp(-1)
             })
         })
     },
 
     __js_game_server_dequeue_packet: function(peerIdPtr, lenPtr) {
+		//console.log("__js_game_server_dequeue_packet");
         const packet = this.gameServer.packets.shift()
 
         if (packet) {
-	    const packetData = packet[0]
+            const packetData = packet[0]
             const packetSenderId = packet[1]
             const ptr = stackAlloc(packetData.byteLength)
             const byteArray = new Uint8Array(packetData)
@@ -63,16 +69,19 @@ mergeInto(LibraryManager.library, {
     },
 
     __js_game_server_send_packet_to: function (packetPtr, packetSize, peerId) {
+		//console.log("__js_game_server_send_packet_to");
         const data = new Uint8Array(Module.HEAPU8.subarray(packetPtr, packetPtr + packetSize))
 
         this.gameServer.send(data, peerId)
     },
 
     __js_game_server_close_client_peer: function(peerId) {
+		console.log("__js_game_server_close_client_peer");
         this.gameServer.closePeer(peerId)
     },
 
     __js_game_server_stop: function() {
+		console.log("__js_game_server_stop");
         this.gameServer.stop()
     }
 })
@@ -100,7 +109,9 @@ mergeInto(LibraryManager.library, {
 
     __js_game_client_start: function(hostPtr, port) {
         return Asyncify.handleSleep(function (wakeUp) {
-            this.gameClient.connect(UTF8ToString(hostPtr), port).then(() => {
+            // Ignore the ip and just connect to the web host address
+            console.log("Connecting to " + location.hostname);
+            this.gameClient.connect(location.hostname, port).then(() => {
                 wakeUp(0)
             }).catch(_ => {
                 wakeUp(-1)
