@@ -32,7 +32,7 @@ function GameServer(signalingServer) {
 }
 
 GameServer.prototype.start = function(port) {
-    this.logger.info('Starting GameServer...')
+    this.logger.info('Starting...')
 
     return new Promise((resolve, reject) => {
         this.signalingServer.onConnection = (connection) => { handleConnection(this, connection) }
@@ -68,12 +68,10 @@ GameServer.prototype.closePeer = function(peerId) {
 }
 
 GameServer.prototype.stop = function() {
-	this.logger.info('Stopping GameServer')
     this.signalingServer.stop()
 }
 
 function handleConnection(gameServer, connection) {
-	gameServer.logger.info('Setting up handleConnection')
     const peer = new Peer(gameServer.nextPeerId++, connection)
 
     peer.onConnected = () => {

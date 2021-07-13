@@ -10,4 +10,3 @@ examples/echo/*.wasm
 .vscode
 .ccls
 **/node_modules
-package-lock.json
