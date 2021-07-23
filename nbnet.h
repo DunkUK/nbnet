@@ -1879,12 +1879,13 @@ static void AES_CBC_encrypt_buffer(struct AES_ctx *,uint8_t*, uint32_t);
 static void AES_CBC_decrypt_buffer(struct AES_ctx*, uint8_t*, uint32_t);
 
 void poly1305_auth(uint8_t out[POLY1305_TAGLEN], const uint8_t *m, size_t inlen,
-                   const uint8_t key[POLY1305_KEYLEN])
+	const uint8_t key[POLY1305_KEYLEN])
 #ifndef _MSC_VER
-    __attribute__((__bounded__(__minbytes__, 1, POLY1305_TAGLEN)))
-    __attribute__((__bounded__(__buffer__, 2, 3)))
-    __attribute__((__bounded__(__minbytes__, 4, POLY1305_KEYLEN)));
+	__attribute__((__bounded__(__minbytes__, 1, POLY1305_TAGLEN)))
+	__attribute__((__bounded__(__buffer__, 2, 3)))
+	__attribute__((__bounded__(__minbytes__, 4, POLY1305_KEYLEN)))
 #endif
+;
 
 void NBN_Packet_InitWrite(
         NBN_Packet *packet, uint32_t protocol_id, uint16_t seq_number, uint16_t ack, uint32_t ack_bits)
@@ -2322,7 +2323,7 @@ NBN_Connection *NBN_Connection_Create(uint32_t id, uint32_t protocol_id, void *d
         connection->packet_recv_seq_buffer[i] = 0xFFFFFFFF;
     }
 
-    connection->stats = (NBN_ConnectionStats){};
+    connection->stats = {};
     connection->can_decrypt = false;
     connection->can_encrypt = false;
 
@@ -2500,9 +2501,7 @@ int NBN_Connection_FlushSendQueue(NBN_Connection *connection)
                 NBN_Channel_UpdateMessageLastSendTime(channel, message, connection->time);
 
                 packet_entry->messages[packet_entry->messages_count++] =
-                    (NBN_MessageEntry){ message->header.id, channel->id };
-
-				packet_entry->messages[packet_entry->messages_count++] = newEntry;
+                    { message->header.id, channel->id };
 
                 if (channel->type == NBN_CHANNEL_TYPE_UNRELIABLE_ORDERED)
                     NBN_Connection_RecycleMessage(connection, message);
@@ -2700,7 +2699,7 @@ static NBN_PacketEntry *NBN_Connection_InsertOutgoingPacketEntry(NBN_Connection 
     uint16_t index = seq_number % NBN_MAX_PACKET_ENTRIES;
 
     connection->packet_send_seq_buffer[index] = seq_number;
-    connection->packet_send_buffer[index] = (NBN_PacketEntry){ false, 0 };
+    connection->packet_send_buffer[index] = { false, 0 };
 
     return &connection->packet_send_buffer[index];
 }
