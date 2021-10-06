@@ -24,6 +24,7 @@
 
 #ifndef NBNET_H
 #define NBNET_H
+#define NBN_DISABLE_MEMORY_POOLING
 
 #include <stdlib.h>
 #include <stdint.h>
@@ -590,7 +591,7 @@ void NBN_ClientAcceptedMessage_Destroy(NBN_ClientAcceptedMessage *);
 #pragma region NBN_ByteArrayMessage
 
 #define NBN_BYTE_ARRAY_MESSAGE_TYPE (NBN_MAX_MESSAGE_TYPES - 4) /* Reserved message type */
-#define NBN_BYTE_ARRAY_MAX_SIZE 4096
+#define NBN_BYTE_ARRAY_MAX_SIZE 255000
 
 typedef struct
 {
