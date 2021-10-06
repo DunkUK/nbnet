@@ -9,8 +9,9 @@ function SignalingClient(protocol_id, options) {
 
 SignalingClient.prototype.connect = function(host, port) {
     return new Promise((resolve, reject) => {
-		var HOST = location.origin.replace(/^http/, 'ws')
-        const uri = HOST;
+		/*var HOST = location.origin.replace(/^http/, 'ws')
+        const uri = HOST;*/
+        const uri = this.options['https'] ? `wss://${host}:${port}` : `ws://${host}:${port}`
 
         this.logger.info(this.options['https'])
         this.logger.info(`Connecting to ${uri} (protocol: %s)...`, this.protocol)

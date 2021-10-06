@@ -2764,7 +2764,10 @@ static void Connection_InitOutgoingPacket(
 static NBN_PacketEntry *Connection_InsertOutgoingPacketEntry(NBN_Connection *connection, uint16_t seq_number)
 {
     uint16_t index = seq_number % NBN_MAX_PACKET_ENTRIES;
-    NBN_PacketEntry entry = { .acked = false, .messages_count = 0, .send_time = 0 };
+	NBN_PacketEntry entry;
+	entry.acked = false;
+	entry.messages_count = 0;
+	entry.send_time = 0;
 
     connection->packet_send_seq_buffer[index] = seq_number;
     connection->packet_send_buffer[index] = entry;
