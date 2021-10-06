@@ -117,14 +117,14 @@ int main(void)
                     {
                         client = NBN_GameServer_GetIncomingConnection();
 
-                        NBN_GameServer_AcceptIncomingConnection(NULL);
+                        NBN_GameServer_AcceptIncomingConnection();
                     }
 
                     break;
 
                     // The client has disconnected
                 case NBN_CLIENT_DISCONNECTED:
-                    assert(NBN_GameServer_GetDisconnectedClientId() == client->id);
+                    assert(NBN_GameServer_GetDisconnectedClient()->id == client->id);
 
                     client = NULL;
                     break;

@@ -32,10 +32,6 @@
 // An arbitrary chosen code used when rejecting a client to let it know that another client is already connected
 #define ECHO_SERVER_BUSY_CODE 42
 
-#define NBN_Allocator malloc // nbnet allocator
-#define NBN_Deallocator free // nbnet deallocator
-#define NBN_Reallocator realloc // nbnet deallocator
-
 // nbnet logging
 // nbnet does not implement any logging capabilities, you need to provide your own
 enum
@@ -67,13 +63,9 @@ typedef struct
     char data[ECHO_MESSAGE_LENGTH];
 } EchoMessage;
 
-BEGIN_MESSAGE(EchoMessage)
-    SERIALIZE_UINT(msg->length, 0, ECHO_MESSAGE_LENGTH);
-    SERIALIZE_BYTES(msg->data, msg->length);
-END_MESSAGE
-
 EchoMessage *EchoMessage_Create(void);
 void EchoMessage_Destroy(EchoMessage *);
+int EchoMessage_Serialize(EchoMessage *, NBN_Stream *);
 
 void Sleep(double);
 

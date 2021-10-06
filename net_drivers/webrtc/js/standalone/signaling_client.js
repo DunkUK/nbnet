@@ -1,9 +1,10 @@
 const loggerFactory = require('../logger.js')
 
-function SignalingClient(protocol_id) {
+function SignalingClient(protocol_id, options) {
     this.protocol = protocol_id.toString()
     this.logger = loggerFactory.createLogger('StandaloneSignalingClient')
     this.connected = false
+    this.options = options
 }
 
 SignalingClient.prototype.connect = function(host, port) {
@@ -11,6 +12,7 @@ SignalingClient.prototype.connect = function(host, port) {
 		var HOST = location.origin.replace(/^http/, 'ws')
         const uri = HOST;
 
+        this.logger.info(this.options['https'])
         this.logger.info(`Connecting to ${uri} (protocol: %s)...`, this.protocol)
 
         const WebSocket = require('websocket').w3cwebsocket
