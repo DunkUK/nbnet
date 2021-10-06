@@ -22,7 +22,7 @@ SignalingServer.prototype.start = function(port) {
 
             server = createHttpsServer(this, fs.readFileSync(this.options['key']), fs.readFileSync(this.options['cert']))
         } else {
-            server = createHttpServer()
+            server = createHttpServer(this)
         }
         
         /*this.logger.info('Received request for ' + request.url)
@@ -127,9 +127,9 @@ SignalingServer.prototype.isSecure = function() {
     return this.options['https']
 }
 
-function createHttpServer() {
+function createHttpServer(signalingServer) {
     return require('http').createServer((request, response) => {
-        this.logger.info('Received request for ' + request.url)
+        signalingServer.logger.info('Received request for ' + request.url)
 
         response.writeHead(404)
         response.end()
