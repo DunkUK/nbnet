@@ -59,11 +59,61 @@ SignalingServer.prototype.isSecure = function() {
 }
 
 function createHttpServer(signalingServer) {
+    var fs = require('fs');
+    var url = require('url');
+    var path = require('path');
+        
     return require('http').createServer((request, response) => {
         signalingServer.logger.info('Received request for ' + request.url)
-
-        response.writeHead(404)
-        response.end()
+        
+        var uri = url.parse(request.url).pathname;
+        var filename = path.join(process.cwd(), uri);
+        var zippedVersion = filename + ".gz";
+        var useZipped = false;
+        try
+        {
+            if(fs.statSync(zippedVersion).isFile())
+            {
+                useZipped = true;
+                filename = zippedVersion;
+            }
+        }
+        catch(e)
+        {
+            
+        }
+        signalingServer.logger.info('Zipped file ' + zippedVersion + ' found = ' + useZipped);
+        fs.exists(filename, function(exists)
+        {
+            if (!exists)
+            {
+                response.writeHead(404)
+                response.end()
+                return;
+            }
+            if (fs.statSync(filename).isDirectory()) filename += '/index.html';
+            
+            fs.readFile(filename, "binary", function(err, file)
+            {
+                if (err)
+                {
+                    response.writeHead(500, {"Content-Type": "text/plain"});
+                    response.write(err + "\n");
+                    response.end();
+                    return;
+                }
+                if (useZipped)
+                {
+                    response.writeHead(200, {"Content-Encoding": "gzip"});
+                }
+                else
+                {
+                    response.writeHead(200);
+                }
+                response.write(file, "binary");
+                response.end();
+            });
+        });
     })
 }
 
