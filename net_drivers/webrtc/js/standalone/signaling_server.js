@@ -13,13 +13,13 @@ SignalingServer.prototype.start = function(port) {
 
         var server
 
-        if (this.options['https']) {
-            const fs = require('fs')
-
-            server = createHttpsServer(this, fs.readFileSync(this.options['key']), fs.readFileSync(this.options['cert']))
-        } else {
+        //if (this.options['https']) {
+        //    const fs = require('fs')
+//
+        //    server = createHttpsServer(this, fs.readFileSync("key.pem"), fs.readFileSync("cert.pem"))
+        //} else {
             server = createHttpServer(this)
-        }
+        //}
 
         const WebSocketServer = require('websocket').server
 
@@ -108,7 +108,7 @@ function createHttpServer(signalingServer) {
                 }
                 else
                 {
-                    response.writeHead(200);
+                    response.writeHead(200, {"Content-Type": "text/html"});
                 }
                 response.write(file, "binary");
                 response.end();
